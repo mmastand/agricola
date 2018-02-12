@@ -4,7 +4,8 @@ get_game_history <- function(game_id, game_summary) {
   html <- read_html(paste0("http://www.boiteajeux.net/jeux/agr/historique.php?id=", game_id))
   game_history <- map_df(1:14, get_round, html = html, game_summary = game) 
 }
- 
+
+# Single round history ------------- 
 get_round <- function(html, round_num, game_summary) { 
   round_html <- c(15:1)[round_num]
   res <- list()
@@ -30,8 +31,9 @@ get_round <- function(html, round_num, game_summary) {
   res <- data.frame(res)
   res$action <- rev(res$action)
   
-  res$turn_num <- str_sub(res$action, 1, 1)
-  res$action <- str_sub(res$action, 2, -1)
+  res$turn_num <- as.numeric(str_extract(res$action, "^[0-9]+"))
+  res$action <- str_replace(res$action, "^[0-9]+", "")
+  
   return(res)
 }
 
