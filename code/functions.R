@@ -111,3 +111,38 @@ get_player_names <- function(html) {
   }
   return(player_names)
 }
+
+# Functions to parse game history----------------
+find_occupations <- function(gh) {
+  occs <- str_detect(gh$action, "occupation")
+  gh$occ_flag <- as.numeric(occs)
+  return(gh)
+}
+
+get_occ_name <- function(gh) {
+  gh$occ_name <- str_extract(gh$action, "\"(.*?)\"") %>% 
+    str_sub(start = 2) %>% 
+    str_sub(end = -2)
+  gh <- gh %>%
+    mutate(occ_name = replace(gh$occ_name, gh$occ_flag != 1, NA))
+  return(gh)
+}
+
+get_occ_cost <- function(gh) {
+  gh$occ_cost <- str_extract(gh$action, "(\\(.*?)\\)") %>% 
+    str_sub(start = 2) %>% 
+    str_sub(end = -2)
+  gh <- gh %>%
+    mutate(occ_cost = replace(occ_cost, occ_flag != 1, NA)) %>%
+    mutate(occ_cost = replace(occ_cost, occ_cost == "free", "0x")) %>%
+    mutate(occ_cost = str_extract(occ_cost, "^[0-9]+"))
+  return(gh)
+}
+
+parse_occupations <- function(gh) {
+  gh <- gh %>%
+    find_occupations() %>%
+    get_occ_name() %>%
+    get_occ_cost()
+  return(gh)
+}
