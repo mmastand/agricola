@@ -13,7 +13,7 @@ game_history <- map_df(1:14, get_round, html = html, game_summary = game_summary
 
 
 html <- read_html(paste0("http://www.boiteajeux.net/jeux/agr/historique.php?id=", game_id))
-round <- get_round(html = html, round_num = 2, game_summary = game)
+round <- get_round(html = html, round_num = 1, game_summary = game)
 
 
 

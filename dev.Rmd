@@ -1,0 +1,91 @@
+---
+title: "Agricola Exploration"
+output: html_notebook
+---
+
+```{r}
+library(rvest)
+library(tidyverse)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
+```{r}
+html <- read_html("http://www.boiteajeux.net/jeux/agr/historique.php?id=2990972")
+```
+
+```{r}
+# Clean dirty html tags --------------------
+clean_html <- function(html_string) {
+  h <- gsub("<.*?>", "", html_string) # trim html tags
+  h <- gsub("^[ \t]", "", h) # trim whitespace
+  h <- gsub("\n", "", h)
+  return(h)
+}
+```
+
+Image processing dictionary
+```{r}
+imt <- tribble(
+  ~french, ~english,
+  "Mouton", "> sheep<",
+  "Sanglier", "> boar<",
+  "Boeuf", "> cow<",
+  "Cereale", "> grain<",
+  "Legume", "> veg<",
+  "Bois", "> wood<",
+  "Roseau", "> reed<",
+  "Argile", "> clay<",
+  "Pierre", "> stone<",
+  "1stJ", "> starting player<",
+  "PN", "> food<"
+)
+image_mapper <- pull(imt, english)
+names(image_mapper) = pull(imt, french)
+```
+
+
+```{r}
+player_history_raw <- map_df(1:15, function(round_num){
+  round_html <- c(15:1)[round_num]
+  if (round_num %% 2 == 1) {
+    t <- html_nodes(html,
+                    paste0('.clHistoFonce:nth-child(', round_html, ') .clHisto:nth-child(', i, ')'))
+  } else {
+    t <- html_nodes(html,
+                    paste0('.clHistoClair:nth-child(', round_html, ') .clHisto:nth-child(', i, ')'))
+  }
+  # Get html text
+  clean <- t %>%
+    xml_contents() %>%
+    html_text()
+  
+  res <- tibble(turn_num = as.numeric(str_extract(clean, "[0-9]+")),
+                round_num = round_num,
+                raw = t %>% xml_contents() %>% as.character())
+  return(res)
+})
+player_history_raw
+```
+
+```{r}
+player_history <- player_history_raw %>%
+  mutate(trans = str_replace_all(raw, image_mapper)) %>%
+  mutate(clean = clean_html(trans)) %>%
+  mutate(clean = str_replace(clean, "[0-9]+", "")) %>%
+  mutate(clean = str_replace(clean, "=&gt;", "yields")) %>%
+  filter(!is.na(turn_num)) %>%
+  arrange(turn_num) %>%
+  select(turn_num, round_num, clean)
+player_history
+```
+
+Add player name and num, create whole game.
+```{r}
+
+```
+
